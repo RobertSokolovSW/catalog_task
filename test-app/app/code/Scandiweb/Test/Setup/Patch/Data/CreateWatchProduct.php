@@ -2,7 +2,6 @@
 
 namespace Scandiweb\Test\Setup\Patch\Data;
 
-use Exception;
 use Magento\Catalog\Api\CategoryLinkManagementInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
@@ -13,7 +12,6 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Eav\Setup\EavSetup;
-use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 use Magento\InventoryApi\Api\Data\SourceItemInterfaceFactory;
 use Magento\InventoryApi\Api\Data\SourceItemInterface;
 use Magento\InventoryApi\Api\SourceItemsSaveInterface;
@@ -24,20 +22,51 @@ class CreateWatchProduct implements DataPatchInterface
      * @var State
      */
     protected State $appState;
+
+    /**
+     * @var EavSetup
+     */
     protected EavSetup $eavSetup;
+
+    /**
+     * @var ProductInterfaceFactory
+     */
     protected ProductInterfaceFactory $productInterfaceFactory;
+
+    /**
+     * @var ProductRepositoryInterface
+     */
     protected ProductRepositoryInterface $productRepository;
-    protected CategoryCollectionFactory $categoryCollectionFactory;
+
+    /**
+     * @var CategoryLinkManagementInterface
+     */
     protected CategoryLinkManagementInterface $categoryLink;
+
+    /**
+     * @var SourceItemInterfaceFactory
+     */
     protected SourceItemInterfaceFactory $sourceItemFactory;
+
+    /**
+     * @var SourceItemsSaveInterface
+     */
     protected SourceItemsSaveInterface $sourceItemsSaveInterface;
 
+    /**
+     * @param State $appState
+     * @param ProductInterfaceFactory $productInterfaceFactory
+     * @param ProductRepositoryInterface $productRepository
+     * @param EavSetup $eavSetup
+     * @param CategoryLinkManagementInterface $categoryLink
+     * @param SourceItemsSaveInterface $sourceItemsSaveInterface
+     * @param SourceItemInterfaceFactory $sourceItemFactory
+     */
     public function __construct(
         State $appState,
         ProductInterfaceFactory $productInterfaceFactory,
         ProductRepositoryInterface $productRepository,
         EavSetup $eavSetup,
-        CategoryCollectionFactory $categoryCollectionFactory,
         CategoryLinkManagementInterface $categoryLink,
         SourceItemsSaveInterface $sourceItemsSaveInterface,
         SourceItemInterfaceFactory $sourceItemFactory
@@ -46,18 +75,29 @@ class CreateWatchProduct implements DataPatchInterface
         $this->productInterfaceFactory = $productInterfaceFactory;
         $this->productRepository = $productRepository;
         $this->eavSetup = $eavSetup;
-        $this->categoryCollectionFactory = $categoryCollectionFactory;
         $this->categoryLink = $categoryLink;
         $this->sourceItemFactory = $sourceItemFactory;
         $this->sourceItemsSaveInterface = $sourceItemsSaveInterface;
     }
 
-    public function apply()
+    /**
+     * @return void
+     * @throws \Exception
+     */
+    public function apply(): void
     {
         $this->appState->emulateAreaCode('adminhtml', [$this, 'execute']);
     }
 
-    public function execute()
+    /**
+     * @return void
+     * @throws \Magento\Framework\Exception\CouldNotSaveException
+     * @throws \Magento\Framework\Exception\InputException
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\StateException
+     * @throws \Magento\Framework\Validation\ValidationException
+     */
+    public function execute(): void
     {
         $product = $this->productInterfaceFactory->create();
 
@@ -81,23 +121,28 @@ class CreateWatchProduct implements DataPatchInterface
         $product = $this->productRepository->save($product);
 
         $sourceItem = $this->sourceItemFactory->create();
-        $sourceItem->setSourceCode("default");
+        $sourceItem->setSourceCode('default');
         $sourceItem->setQuantity(10);
         $sourceItem->setSku($sku);
         $sourceItem->setStatus(SourceItemInterface::STATUS_IN_STOCK);
-        $this->sourceItems[] = $sourceItem;
 
-        $this->sourceItemsSaveInterface->execute($this->sourceItems);
+        $this->sourceItemsSaveInterface->execute([$sourceItem]);
 
         $this->categoryLink->assignProductToCategories($product->getSku(), [2]);
     }
 
-    public function getAliases()
+    /**
+     * @return array|string[]
+     */
+    public function getAliases(): array
     {
         return [];
     }
 
-    public static function getDependencies()
+    /**
+     * @return array|string[]
+     */
+    public static function getDependencies(): array
     {
         return [];
     }
